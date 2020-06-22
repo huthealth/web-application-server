@@ -57,8 +57,13 @@ public class RequestHandler extends Thread {
     }
 
     private byte[] getHtmlFile(String url ) throws IOException {
-        File file = new File("C:\\Users\\u\\IdeaProjects\\web-application-server\\webapp" + url);
+       
+	String path = "./webapp" + url;
+	File file = new File(path);
         if(!file.exists()) {
+		System.out.println();
+		System.out.println("Cant find file path : "+ file.toPath());
+		System.out.println();
             return "wrong url".getBytes();
         }
         return java.nio.file.Files.readAllBytes(file.toPath());
