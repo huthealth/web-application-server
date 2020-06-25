@@ -28,13 +28,15 @@
 * 
 
 ### 요구사항 4 - redirect 방식으로 이동
-* 
+* http 302 응답코드 == redirect
+* 302 코드와 함께 location을 응답헤더로 보내주면 클라이언트는 location을 요청한다. 
 
 ### 요구사항 5 - cookie
 * 
 
-### 요구사항 6 - stylesheet 적용
-* 
+### 요구사항 6 - cookie 이용한 html table 생성
+* 문제점 : 서버에서 set-cookie 시 부모 경로에 저장됨
+* 해결 : PATH를 명시적으로 설정해줌(/)
 
 ### heroku 서버에 배포 후
 * 
