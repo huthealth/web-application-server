@@ -2,6 +2,7 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Collection;
 import java.util.Map;
 
 import db.DataBase;
@@ -29,32 +30,30 @@ public class RequestHandler extends Thread {
             DataOutputStream dos = new DataOutputStream(out);
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-
             String header = br.readLine();
             if(header == null ) {
-                log.debug("header is null");
+                log.debug("header: ");
                 return;
             }
             String[] token = header.split(" ");
             String method = token[0];
             String url = token[1];
+            String cookie = "";
             int contextLen = 0;
             boolean logginCookie = false;
 
             while(!"".equals(header)) {
                 if(header == null) break;
-                log.debug(header);
+                log.debug("header: {}",header);
                 token = header.split(" ");
                 if(token[0].equals("Content-Length:")) contextLen = Integer.parseInt(token[1]);
                 if(token[0].equals("Cookie:")) {
-                    if(token[1].equals("logined=true")) logginCookie = true;
+                    cookie = header.substring(token[0].length()+1);
                 }
                 header = br.readLine();
             }
 
-
-
-            if(url.length() >11  && url.substring(0,12).matches("/user/create")) {
+            if(url.equals("/user/create") ) {
                 if(method.equals("POST")) {
                     //br.readLine();
                     String httpBody = util.IOUtils.readData(br,contextLen);
@@ -65,37 +64,66 @@ public class RequestHandler extends Thread {
                     url = temp[0];
                     createUser(temp[1]);
                 }
-            }
-
-            boolean foundUser = false;
-            if(method.equals("POST") && url.equals("/user/login")) {
-                String httpBody = util.IOUtils.readData(br,contextLen);
-                System.out.println(httpBody);
-                Map<String,String> paramMap = util.HttpRequestUtils.parseQueryString(httpBody);
-                String userId = paramMap.get("userId");
-                String password = paramMap.get("password");
-                User loginUser = DataBase.findUserById(userId);
-                if(loginUser != null && loginUser.getPassword().equals(password)) {
-                    foundUser = true;
-                }
-            }
-
-
-
-            if(url.equals("/user/create") ) {
-                String location = "http://localhost:8080/index.html";
+                String location = "/index.html";
                 response302Header(dos,location,-1);
             }
             else if (url.equals("/user/login")) {
+                boolean foundUser = false;
+                if(method.equals("POST")) {
+                    String httpBody = util.IOUtils.readData(br,contextLen);
+                    log.debug("httpBody : {}",httpBody);
+                    Map<String,String> paramMap = util.HttpRequestUtils.parseQueryString(httpBody);
+                    String userId = paramMap.get("userId");
+                    String password = paramMap.get("password");
+                    User loginUser = DataBase.findUserById(userId);
+                    if(loginUser != null && loginUser.getPassword().equals(password)) {
+                        foundUser = true;
+                    }
+                }
                 if(foundUser) {
-                    String location = "http://localhost:8080/index.html";
+                    String location = "/index.html";
                     response302Header(dos,location,1);
                 }
                 else {
-                    String location = "http://localhost:8080/user/login_failed.html";
+                    String location = "/user/login_failed.html";
                     response302Header(dos,location,0);
                 }
             }
+            else if(url.equals("/user/list")){
+                Map<String,String> cookieMap = util.HttpRequestUtils.parseCookies(cookie);
+                String isLogin = cookieMap.get("logined");
+                if(isLogin!=null){
+                    if(isLogin.equals("true")) {
+
+                        StringBuilder sb = new StringBuilder();
+                        Collection<User> userCollection = DataBase.findAll();
+                        sb.append(
+                                "<TABLE BORDER=1>\n" +
+                                "<CAPTION>User List</CAPTION>\n" +
+                                "<TR>\n" +
+                                "    <TD>ID</TD>\n" +
+                                "    <TD>NAME</TD>\n" +
+                                "    <TD>EMAIL</TD>\n" +
+                                "</TR>");
+                        for(User user : userCollection) {
+                            sb.append("<TR>\n +" +
+                                    "    <TD>"+user.getUserId()+"</TD>\n +" +
+                                    "    <TD>"+user.getName()+"</TD>\n +" +
+                                    "    <TD>"+user.getEmail()+"</TD>\n +" +
+                                    "<TR>");
+                        }
+                        sb.append("</TABLE>");
+                        String body = sb.toString();
+                        response200Header(dos,body.length());
+                        responseBody(dos,body.getBytes());
+                    }
+                    else {
+                        String location = "/login.html";
+                        response302Header(dos,location,0);
+                    }
+                }
+            }
+
             else if( url.endsWith(".css")){
                 byte[] body = getHtmlFile(url);
                 response200HeaderWithCSS(dos, body.length);
@@ -133,9 +161,7 @@ public class RequestHandler extends Thread {
 	String path = "./webapp" + url;
 	File file = new File(path);
         if(!file.exists()) {
-		System.out.println();
-		System.out.println("Cant find file path : "+ file.toPath());
-		System.out.println();
+		log.debug("cant find file : {}", path);
             return "wrong url".getBytes();
         }
         return java.nio.file.Files.readAllBytes(file.toPath());
@@ -169,10 +195,10 @@ public class RequestHandler extends Thread {
             dos.writeBytes("HTTP/1.1 302 FOUND \r\n");
             dos.writeBytes("Location: " + location + "\r\n");
             if(foundUser == 1) {
-                dos.writeBytes("Set-Cookie: logined=true");
+                dos.writeBytes("Set-Cookie: logined=true; Path=/ \r\n");
             }
             else if (foundUser == 0) {
-                dos.writeBytes("Set-Cookie: logined=false");
+                dos.writeBytes("Set-Cookie: logined=false; Path=/\r\n");
             }
             dos.writeBytes("\r\n");
             dos.flush();
