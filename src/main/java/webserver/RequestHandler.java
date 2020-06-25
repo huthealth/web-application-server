@@ -98,6 +98,8 @@ public class RequestHandler extends Thread {
                         StringBuilder sb = new StringBuilder();
                         Collection<User> userCollection = DataBase.findAll();
                         sb.append(
+                                "<!DOCTYPE html>\n" +
+                                        "<html lang=\"en\">"+
                                 "<TABLE BORDER=1>\n" +
                                 "<CAPTION>User List</CAPTION>\n" +
                                 "<TR>\n" +
@@ -112,7 +114,7 @@ public class RequestHandler extends Thread {
                                     "    <TD>"+user.getEmail()+"</TD>\n +" +
                                     "<TR>");
                         }
-                        sb.append("</TABLE>");
+                        sb.append("</TABLE></html>");
                         String body = sb.toString();
                         response200Header(dos,body.length());
                         responseBody(dos,body.getBytes());
