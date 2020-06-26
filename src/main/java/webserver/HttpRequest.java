@@ -51,6 +51,7 @@ public class HttpRequest {
             path = token[1];
             int contextLen = Integer.parseInt(headerMap.get("Content-Length"));
             body = util.IOUtils.readData(br,contextLen);
+            parameterMap = HttpRequestUtils.parseQueryString(body);
         }
     }
 
