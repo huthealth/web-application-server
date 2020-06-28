@@ -1,4 +1,4 @@
-package webserver;
+package util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 public class HttpResponse {
@@ -44,6 +43,22 @@ public class HttpResponse {
             }
             dos.writeBytes("\r\n");
             dos.write(body, 0, body.length);
+            dos.flush();
+        }
+        catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    public void forwardBody(String body) {
+        try {
+            dos.writeBytes("HTTP/1.1 200 OK \r\n");
+            headerMap.put("Content-Type", "text/html;charset=utf-8");
+            for (Map.Entry<String, String> entry : headerMap.entrySet()){
+                dos.writeBytes(entry.getKey()+": " + entry.getValue() + "\r\n");
+            }
+            dos.writeBytes("\r\n");
+            dos.write(body.getBytes(), 0, body.length());
             dos.flush();
         }
         catch (IOException e) {

@@ -1,4 +1,4 @@
-package webserver;
+package util;
 
 
 import util.HttpRequestUtils;
@@ -33,10 +33,13 @@ public class HttpRequest {
         String url = token[1];
 
         if(method.equals("GET")) {
+            path = token[1];
             int indexOfQ = url.indexOf("?");
-            path = url.substring(0,indexOfQ);
-            String query = url.substring(indexOfQ+1);
-            parameterMap = HttpRequestUtils.parseQueryString(query);
+            if(indexOfQ != -1) {
+                path = url.substring(0,indexOfQ);
+                String query = url.substring(indexOfQ+1);
+                parameterMap = HttpRequestUtils.parseQueryString(query);
+            }
         }
 
         header = br.readLine();
