@@ -40,9 +40,9 @@ public class RequestHandler extends Thread {
            String body = request.getBody();
 
             if(url.equals("/user/create") ) {
-                if (method.equals("POST")) {
-                    createUser(body);
-                }
+                User user = new User(request.getParameter("userId"),request.getParameter("password"),
+                        request.getParameter("name"),request.getParameter("email"));
+                DataBase.addUser(user);
                 String location = "/index.html";
                 response.sendRedirect(location);
             }
@@ -68,7 +68,6 @@ public class RequestHandler extends Thread {
                 String isLogin = cookieMap.get("logined");
                 if (isLogin != null) {
                     if (isLogin.equals("true")) {
-
                         StringBuilder sb = new StringBuilder();
                         Collection<User> userCollection = DataBase.findAll();
                         sb.append(
@@ -98,7 +97,6 @@ public class RequestHandler extends Thread {
                 }
             }
 
-
             else {
                 response.forward(url);
             }
@@ -109,83 +107,4 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private boolean createUser(String param) {
-        Map<String,String> paramMap = util.HttpRequestUtils.parseQueryString(param);
-        String userId = paramMap.get("userId");
-        String password = paramMap.get("password");
-        String name = paramMap.get("name");
-        String email = paramMap.get("email");
-
-        if(userId == null || password == null || name == null || email == null) {
-            log.debug("회원가입 실패");
-            return false;
-        }
-        User newUser = new User(userId,password,name,email);
-        DataBase.addUser(newUser);
-        log.debug("회원가입 성공");
-        return true;
-    }
-
-    private byte[] getHtmlFile(String url ) throws IOException {
-
-	String path = "./webapp" + url;
-	File file = new File(path);
-        if(!file.exists()) {
-		log.debug("cant find file : {}", path);
-            return "wrong url".getBytes();
-        }
-        return java.nio.file.Files.readAllBytes(file.toPath());
-    }
-
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
-        try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type:text/html\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response200HeaderWithCSS(DataOutputStream dos, int lengthOfBodyContent) {
-        try {
-            dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type:text/css\r\n");
-            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
-            dos.writeBytes("\r\n");
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-    private void response302Header(DataOutputStream dos, String location, int foundUser) {
-        try {
-
-            dos.writeBytes("HTTP/1.1 302 FOUND \r\n");
-            dos.writeBytes("Location: " + location + "\r\n");
-            if(foundUser == 1) {
-                dos.writeBytes("Set-Cookie: logined=true; Path=/ \r\n");
-            }
-            else if (foundUser == 0) {
-                dos.writeBytes("Set-Cookie: logined=false; Path=/\r\n");
-            }
-            dos.writeBytes("\r\n");
-            dos.flush();
-        }
-        catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
-
-
-
-    private void responseBody(DataOutputStream dos, byte[] body) {
-        try {
-            dos.write(body, 0, body.length);
-            dos.flush();
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-    }
 }
