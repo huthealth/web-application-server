@@ -5,12 +5,15 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.Map;
 
+import Controller.Controller;
 import db.DataBase;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequest;
 import util.HttpResponse;
+
+import javax.naming.ldap.Control;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -31,21 +34,13 @@ public class RequestHandler extends Thread {
             HttpRequest request = new HttpRequest(in);
             HttpResponse response = new HttpResponse(out);
 
-           String url = request.getPath();
-
-            if("/user/create".equals(url) ) {
-                createUser(request, response);
-            }
-
-            else if ("/user/login".equals(url)) {
-                login(request, response);
-            }
-
-            else if("/user/list".equals(url)) {
-                listUser(request, response);
+            Controller controller = RequestMapping.getController(request.getPath());
+            if( controller == null) {
+                String path = getDefaultPath(request.getPath());
+                response.forward(path);
             }
             else {
-                response.forward(url);
+                controller.service(request,response);
             }
         }
         catch (IOException e) {
@@ -53,62 +48,10 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void listUser(HttpRequest request, HttpResponse response) {
-        String cookie = request.getHeader("Cookie");
-        Map<String, String> cookieMap = util.HttpRequestUtils.parseCookies(cookie);
-        String isLogin = cookieMap.get("logined");
-        if (isLogin != null) {
-            if (isLogin.equals("true")) {
-                StringBuilder sb = new StringBuilder();
-                Collection<User> userCollection = DataBase.findAll();
-                sb.append(
-                        "<!DOCTYPE html>\n" +
-                                "<html lang=\"en\">" +
-                                "<TABLE BORDER=1>\n" +
-                                "<CAPTION>User List</CAPTION>\n" +
-                                "<TR>\n" +
-                                "    <TD>ID</TD>\n" +
-                                "    <TD>NAME</TD>\n" +
-                                "    <TD>EMAIL</TD>\n" +
-                                "</TR>");
-                for (User user : userCollection) {
-                    sb.append("<TR>\n +" +
-                            "    <TD>" + user.getUserId() + "</TD>\n +" +
-                            "    <TD>" + user.getName() + "</TD>\n +" +
-                            "    <TD>" + user.getEmail() + "</TD>\n +" +
-                            "<TR>");
-                }
-                sb.append("</TABLE></html>");
-                String table = sb.toString();
-                response.forwardBody(table);
-            }
+    private String getDefaultPath(String path) {
+        if("/".equals(path)) {
+            return "/index.html";
         }
-        else {
-            response.sendRedirect("/user/login.html");
-        }
+        return path;
     }
-
-    private void login(HttpRequest request, HttpResponse response) {
-        boolean foundUser = false;
-        String userId = request.getParameter("userId");
-        String password = request.getParameter("password");
-        User loginUser = DataBase.findUserById(userId);
-        if(loginUser != null && loginUser.getPassword().equals(password)) {
-            response.addHeader("Set-Cookie", "logined=true");
-            response.sendRedirect("/index.html");
-        }
-        else {
-            response.addHeader("Set-Cookie", "logined=false");
-            response.sendRedirect("/user/login_failed.html");
-        }
-    }
-
-    private void createUser(HttpRequest request, HttpResponse response) {
-        User user = new User(request.getParameter("userId"),request.getParameter("password"),
-                request.getParameter("name"),request.getParameter("email"));
-        DataBase.addUser(user);
-        String location = "/index.html";
-        response.sendRedirect(location);
-    }
-
 }
