@@ -6,14 +6,19 @@ import http.HttpResponse;
 import java.util.Collection;
 import java.util.Map;
 
+import model.HttpSession;
 import model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.HttpRequestUtils;
 import db.DataBase;
 
 public class ListUserController extends AbstractController {
+    private static final Logger log = LoggerFactory.getLogger(CreateUserController.class);
     @Override
     public void doGet(HttpRequest request, HttpResponse response) {
-        if (!isLogin(request.getHeader("Cookie"))) {
+        log.debug("sessionId in cookie : {}", request.getCookies().getCookie("JSESSION"));
+        if (!isLogin(request.getSession())) {
             response.sendRedirect("/user/login.html");
             return;
         }
@@ -32,12 +37,13 @@ public class ListUserController extends AbstractController {
         response.forwardBody(sb.toString());
     }
 
-    private boolean isLogin(String cookieValue) {
-        Map<String, String> cookies = HttpRequestUtils.parseCookies(cookieValue);
-        String value = cookies.get("logined");
-        if (value == null) {
+    private boolean isLogin(HttpSession session) {
+        log.debug("listUserController sessionId : {}",session.getId());
+        User user = (User)session.getAttribute("user");
+
+        if (user == null) {
             return false;
         }
-        return Boolean.parseBoolean(value);
+        return true;
     }
 }

@@ -14,23 +14,14 @@
 * 구현을 완료한 후 구현 과정에서 새롭게 알게된 내용, 궁금한 내용을 기록한다.
 * 각 요구사항을 구현하는 것이 중요한 것이 아니라 구현 과정을 통해 학습한 내용을 인식하는 것이 배움에 중요하다. 
 
-### 요구사항 1 - http://localhost:8080/index.html로 접속시 응답
-* 
-
-### 요구사항 2 - get 방식으로 회원가입
-* 
-
-### 요구사항 3 - post 방식으로 회원가입
-* 
-
-### 요구사항 4 - redirect 방식으로 이동
-* 
-
-### 요구사항 5 - cookie
-* 
-
-### 요구사항 6 - stylesheet 적용
-* 
-
-### heroku 서버에 배포 후
-* 
+### 요구사항 : HTTP Session 구현
+## 배운 점
+### 1 
+* RequestHandler에서 클라이언트가 서버에 접속 시 요청 쿠키에 세션이 존재하지 않으면 세션아이디만 랜덤으로 만들고
+그 세션아이디에 해당하는 HttpSession 객체 생성x
+* 실수인줄 알았는데 생각해보니 login하지 않으면 세션에 저장할 데이터 존재하지않으므로 객체 추가할 필요 없음 -> 메모리 낭비 제거
+### 2
+* Set-Cookie가 아닌 Cookie로 응답헤더를 추가해 요청헤더에 쿠키가 추가 되지 않았다. 그런데 로그인 후 UserList가 출력됨
+* login컨트롤러에서 request.getSession -> 요청헤더에 쿠키 없으므로  request객체에서 HttpSessions.getSession(null) 호출됨
+* HttpSessions의 getSession(id)에서 id가 null이므로 항상 session이 새로 추가된다고 생각했는데 디버깅해보니 id가 null session이 저장되어
+* userlist컨트롤러에서 getSession시 id가 null인 session의 user 검색해 얻어와 출력됨

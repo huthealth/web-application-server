@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import model.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,5 +63,13 @@ public class HttpRequest {
 
 	public String getParameter(String name) {
 		return requestParams.getParameter(name);
+	}
+
+	public HttpCookie getCookies() {
+		return new HttpCookie(headers.getHeader("Cookie"));
+	}
+
+	public HttpSession getSession() {
+		return HttpSessions.getSession(getCookies().getCookie("JSESSION"));
 	}
 }
